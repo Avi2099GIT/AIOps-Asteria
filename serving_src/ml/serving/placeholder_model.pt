@@ -1,0 +1,2 @@
+PLACEHOLDER_MODEL_BINARY
+Replace this file with a real PyTorch state_dict or full model saved to ml/serving/model.pt

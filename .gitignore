@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+
+# Env
+.env
+*.env
+
+# TorchServe artifacts
+serving/ml/serving/model_store/
+serving/ml/serving/*.mar
+model_store/
+logs/
+tmp/
+
+# Docker
+*.pid
+docker-data/

@@ -1,0 +1,1 @@
+fastapi\nfastapi\nrequests\ntorch-model-archiver\ntorch>=1.8.0\ntorchserve\nuvicorn\npydantic\nrequests\nstreamlit\nuvicorn

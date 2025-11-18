@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+requests
+confluent-kafka
+redis
+torch
+numpy
+torch-model-archiver 
+torchserve 
+torch-workflow-archiver
+SQLAlchemy>=1.4
+psycopg2-binary
+alembic

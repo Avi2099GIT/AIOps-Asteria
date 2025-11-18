@@ -1,0 +1,117 @@
+# deploy/docker-compose.yml
+services:
+  ############################################################
+  # API SERVICE (FastAPI) - built from Dockerfile.base
+  ############################################################
+  api:
+    build:
+      context: ../api
+      dockerfile: Dockerfile.base   # FIXED!!
+    image: asteria-api-base
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      - TORCHSERVE_URL=http://torchserve:8080/predictions/anomaly
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_USER=asteria
+      - DATABASE_PASSWORD=asteria_pass
+      - DATABASE_NAME=asteria_db
+    depends_on:
+      - torchserve
+      - db
+
+  ############################################################
+  # TORCHSERVE (Anomaly Model)
+  ############################################################
+  torchserve:
+    build: ../serving
+    image: deploy-torchserve:latest
+    ports:
+      - "8080:8080"   # inference
+      - "8081:8081"   # management API
+    volumes:
+      - ../serving/model-store:/home/model-server/model_store
+    environment:
+      - MODEL_STORE=/home/model-server/model_store
+      - TS_CONFIG_FILE=/home/model-server/config.properties
+      - ENABLE_AUTH=false
+
+
+  ############################################################
+  # STREAMLIT DASHBOARD
+  ############################################################
+  dashboard:
+    build: ../dashboard
+    image: deploy-dashboard:latest
+    command: streamlit run app.py --server.port=8501 --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+
+  ############################################################
+  # FRONTEND (React)
+  ############################################################
+  frontend:
+    build: ../frontend
+    image: deploy-frontend:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://api:8000
+    depends_on:
+      - api
+
+  ############################################################
+  # MITIGATOR SERVICE (reuse base image)
+  ############################################################
+  mitigator:
+    image: asteria-api-base
+    command: ["python", "-u", "app/services/mitigator.py"]
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_USER=asteria
+      - DATABASE_PASSWORD=asteria_pass
+      - DATABASE_NAME=asteria_db
+    depends_on:
+      - db
+
+  ############################################################
+  # EVENT CONSUMER (reuse base image)
+  ############################################################
+  event_consumer:
+    image: asteria-api-base
+    command: ["python", "-u", "app/services/event_consumer.py"]
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_USER=asteria
+      - DATABASE_PASSWORD=asteria_pass
+      - DATABASE_NAME=asteria_db
+    depends_on:
+      - db
+
+  ############################################################
+  # POSTGRES DATABASE
+  ############################################################
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: asteria
+      POSTGRES_PASSWORD: asteria_pass
+      POSTGRES_DB: asteria_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - asteria_db_data:/var/lib/postgresql/data
+
+volumes:
+  asteria_db_data:

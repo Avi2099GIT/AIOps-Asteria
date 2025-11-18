@@ -1,0 +1,14 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Copy everything from the API folder (where Dockerfile.base lives)
+COPY . /app/
+
+# Fix Python import paths
+ENV PYTHONPATH=/app
+
+# Install requirements
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
